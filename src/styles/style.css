@@ -8,7 +8,9 @@
 
 body{
     background-color: #010005;
-}
+    /* Prevent accidental horizontal scrolling on small screens */
+    overflow-x: hidden;
+} 
 
 nav{
     display: flex;
@@ -86,13 +88,23 @@ nav{
     margin: 5px;
     font-size: 28px;
     background-color: rgb(255, 255, 255);
+    /* container sized for icon-only */
     width: 40px;
     height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-top: 0.5%;
+    border-radius: 8px;
+    padding: 0;
     transition: background 0.3s, transform 0.3s;
+}
+
+/* Make sure brand SVG fonts (Devicon) match color/size */
+.iconIntroVal i {
+    font-size: 20px; /* slightly smaller to match FA icons */
+    color: #010005; /* brand icons appear dark on white */
+    display: inline-block;
+    line-height: 1;
 }
 
 .iconIntroVal:hover {
@@ -224,15 +236,29 @@ h2{
 }
 
 .btnControl{
-    width: 5%;
-    height: 5%;
-    padding: 0.5%;
+    /* fixed square so it's always circular on desktop */
+    width: 48px;
+    height: 48px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
     background-color: rgba(1, 0, 5, 0.271);
-    font-size: 25px;
+    font-size: 20px;
     border: none;
-    border-radius: 50px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
+    /* Prevent flex from stretching the button and keep it on top */
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 20;
+    line-height: 1;
 }
+
+/* Ensure the icon inside is vertically centered */
+.btnControl i{display:inline-block; line-height:1; font-size:18px;}
 
 .btnControl:hover{
     background-color: rgb(0, 0, 0);
@@ -638,6 +664,9 @@ h2{
         padding: 10px 5px;
         white-space: nowrap;
         justify-content: center;
+        /* Allow nav to scroll horizontally instead of forcing layout overflow */
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .links {
@@ -712,8 +741,13 @@ h2{
         font-size: 10px;
     }
     .btnControl{
-        width: 50%;
-        height: 10%;
+        /* Use a fixed, touch-friendly size on small screens */
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        padding: 0.25rem;
+        font-size: 18px;
+        border-radius: 50%;
     }
     .ts img{
         width: 30px;
@@ -773,7 +807,8 @@ h2{
         border-radius: 8px;
         flex-direction: column;
         text-align: center;
-        padding: 15%;
+        /* Reduce padding so items fit more naturally on small screens */
+        padding: 8%;
     }
     .leftItems img{
         width: 35%;
@@ -823,3 +858,10 @@ h2{
         flex-direction: column;
     }
 }
+
+/* Tailwind utility support: hide scrollbar when using .no-scrollbar */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Small tweaks for Tailwind conversions */
+.links { -webkit-tap-highlight-color: transparent; }

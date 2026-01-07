@@ -17,7 +17,7 @@ const projects = [
   {
     title: 'BETCHA API',
     description: 'This Server API is a robust backend system powering the Betcha Booking app. Built with Node.js and MongoDB, it handles user authentication, booking management, image uploads, and Google Drive integration for a seamless and secure experience.',
-    link: 'https://github.com/Xtian69420/Betcha-Booking-API-Master'
+    link: 'https://betcha-booking.vercel.app/'
   },
   {
     title: 'HELP HEALTH',
@@ -64,7 +64,106 @@ leftItems.forEach(item => {
   });
 });
 
-// Automatically trigger click on the first leftItems element on page load
+// Automatically trigger click on the first leftItems element on page load and enable autoplay
+let currentIndex = 0;
+const AUTOPLAY_INTERVAL = 1500; // ms
+let autoplayId = null;
+
+function selectProjectByIndex(index) {
+  if (index < 0 || index >= leftItems.length) return;
+  leftItems[index].click();
+  currentIndex = index;
+}
+
+function nextProject() {
+  currentIndex = (currentIndex + 1) % leftItems.length;
+  selectProjectByIndex(currentIndex);
+}
+
+function startAutoplay() {
+  stopAutoplay();
+  autoplayId = setInterval(nextProject, AUTOPLAY_INTERVAL);
+}
+
+function stopAutoplay() {
+  if (autoplayId) {
+    clearInterval(autoplayId);
+    autoplayId = null;
+  }
+}
+
+// Keep click handler in sync with currentIndex
+leftItems.forEach(item => {
+  const index = parseInt(item.id, 10) - 1;
+
+  function selectThisItem() {
+    // Remove highlight from all
+    leftItems.forEach(i => i.classList.remove('highlight'));
+    // Highlight this one
+    item.classList.add('highlight');
+
+    if (index < 0 || index >= projects.length) return;
+    currentIndex = index; // update current index so autoplay resumes from here
+
+    const project = projects[index];
+    const img = item.querySelector('img');
+    const p = item.querySelector('p');
+
+    if (!img || !p) return;
+
+    imgId.src = img.src;
+    titleId.textContent = project.title;  
+    descId.textContent = project.description;
+
+    linkBtn.onclick = () => {
+      window.open(project.link, '_blank');
+    };
+  }
+
+  // Click selects item
+  item.addEventListener('click', selectThisItem);
+
+  // Hover/pointer: select and pause autoplay while hovering this item
+  item.addEventListener('mouseenter', () => {
+    stopAutoplay();
+    selectThisItem();
+  });
+  item.addEventListener('mouseleave', () => {
+    startAutoplay();
+  });
+
+  // Pointer events (better cross-device support)
+  item.addEventListener('pointerenter', () => {
+    stopAutoplay();
+    selectThisItem();
+  });
+  item.addEventListener('pointerleave', () => {
+    startAutoplay();
+  });
+
+  // Touch support: stop when touching the item, resume after touch ends
+  item.addEventListener('touchstart', () => {
+    stopAutoplay();
+    selectThisItem();
+  }, { passive: true });
+  item.addEventListener('touchend', () => {
+    // Slight delay before resuming to avoid accidental resume during quick taps
+    setTimeout(startAutoplay, 500);
+  }, { passive: true });
+});
+
 if (leftItems.length > 0) {
-  leftItems[0].click();
+  // initial selection
+  selectProjectByIndex(0);
+  // start autoplay
+  startAutoplay();
+}
+
+// Pause autoplay while hovering or touching the project container
+const projCont = document.querySelector('.projCont');
+if (projCont) {
+  projCont.addEventListener('mouseenter', stopAutoplay);
+  projCont.addEventListener('mouseleave', startAutoplay);
+  projCont.addEventListener('touchstart', stopAutoplay, { passive: true });
+  projCont.addEventListener('touchend', startAutoplay, { passive: true });
 }
