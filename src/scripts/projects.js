@@ -16,7 +16,7 @@ const projects = [
   },
   {
     title: 'BETCHA API',
-    description: 'This Server API is a robust backend system powering the Betcha Booking app. Built with Node.js and MongoDB, it handles user authentication, booking management, image uploads, and Google Drive integration for a seamless and secure experience.',
+    description: 'This Server API is a robust backend system powering the Betcha Booking app. Built with Node.js and MongoDB, it handles user authentication, booking management, image uploads, and Google Drive...',
     link: 'https://betcha-booking.vercel.app/'
   },
   {
@@ -37,42 +37,23 @@ const titleId = document.getElementById('titleId');
 const descId = document.getElementById('descId');
 const linkBtn = document.getElementById('linkId');
 
-leftItems.forEach(item => {
-  item.addEventListener('click', () => {
-    // Remove highlight from all
-    leftItems.forEach(i => i.classList.remove('highlight'));
-    
-    // Highlight clicked
-    item.classList.add('highlight');
 
-    const index = parseInt(item.id, 10) - 1;
-    if (index < 0 || index >= projects.length) return;
-
-    const project = projects[index];
-    const img = item.querySelector('img');
-    const p = item.querySelector('p');
-
-    if (!img || !p) return;
-
-    imgId.src = img.src;
-    titleId.textContent = project.title;  
-    descId.textContent = project.description;
-
-    linkBtn.onclick = () => {
-      window.open(project.link, '_blank');
-    };
-  });
-});
 
 // Automatically trigger click on the first leftItems element on page load and enable autoplay
 let currentIndex = 0;
 const AUTOPLAY_INTERVAL = 1500; // ms
 let autoplayId = null;
 
+// Description truncation: limit characters shown and append ellipsis
+const MAX_DESC_CHARS = 200; // change this number to adjust visible character limit
+function truncateText(str, max) {
+  if (!str) return '';
+  return str.length > max ? str.slice(0, max - 1).trimEnd() + '…' : str;
+} 
+
 function selectProjectByIndex(index) {
-  if (index < 0 || index >= leftItems.length) return;
-  leftItems[index].click();
-  currentIndex = index;
+  // Programmatic selection (not user-initiated) should NOT toggle the locked state
+  applySelection(index, false);
 }
 
 function nextProject() {
@@ -92,63 +73,79 @@ function stopAutoplay() {
   }
 }
 
-// Keep click handler in sync with currentIndex
+// Lock state: when true, hover/select won't change selection until unlocked
+let isLocked = false;
+
+function applySelection(index, userInitiated = false) {
+  if (index < 0 || index >= leftItems.length) return;
+  // update UI
+  leftItems.forEach(i => i.classList.remove('highlight'));
+  const item = leftItems[index];
+  item.classList.add('highlight');
+
+  currentIndex = index;
+
+  const project = projects[index];
+  const img = item.querySelector('img');
+  const p = item.querySelector('p');
+
+  if (!img || !p) return;
+
+  imgId.src = img.src;
+  titleId.textContent = project.title;
+  descId.textContent = truncateText(project.description, MAX_DESC_CHARS);
+  // keep full description available on hover (tooltip)
+  descId.title = project.description;
+
+  linkBtn.onclick = () => {
+    window.open(project.link, '_blank');
+  };
+
+  if (userInitiated) {
+    // A user click on a left item locks selection
+    isLocked = true;
+    stopAutoplay();
+  }
+}
+
 leftItems.forEach(item => {
   const index = parseInt(item.id, 10) - 1;
 
-  function selectThisItem() {
-    // Remove highlight from all
-    leftItems.forEach(i => i.classList.remove('highlight'));
-    // Highlight this one
-    item.classList.add('highlight');
+  // Click selects and locks selection
+  item.addEventListener('click', (e) => {
+    applySelection(index, true);
+  });
 
-    if (index < 0 || index >= projects.length) return;
-    currentIndex = index; // update current index so autoplay resumes from here
-
-    const project = projects[index];
-    const img = item.querySelector('img');
-    const p = item.querySelector('p');
-
-    if (!img || !p) return;
-
-    imgId.src = img.src;
-    titleId.textContent = project.title;  
-    descId.textContent = project.description;
-
-    linkBtn.onclick = () => {
-      window.open(project.link, '_blank');
-    };
-  }
-
-  // Click selects item
-  item.addEventListener('click', selectThisItem);
-
-  // Hover/pointer: select and pause autoplay while hovering this item
+  // Hover/pointer: only select if not locked
   item.addEventListener('mouseenter', () => {
-    stopAutoplay();
-    selectThisItem();
+    if (!isLocked) {
+      stopAutoplay();
+      applySelection(index, false);
+    }
   });
   item.addEventListener('mouseleave', () => {
-    startAutoplay();
+    if (!isLocked) startAutoplay();
   });
 
-  // Pointer events (better cross-device support)
   item.addEventListener('pointerenter', () => {
-    stopAutoplay();
-    selectThisItem();
+    if (!isLocked) {
+      stopAutoplay();
+      applySelection(index, false);
+    }
   });
   item.addEventListener('pointerleave', () => {
-    startAutoplay();
+    if (!isLocked) startAutoplay();
   });
 
-  // Touch support: stop when touching the item, resume after touch ends
+  // Touch support
   item.addEventListener('touchstart', () => {
-    stopAutoplay();
-    selectThisItem();
+    if (!isLocked) {
+      stopAutoplay();
+      applySelection(index, false);
+    }
   }, { passive: true });
   item.addEventListener('touchend', () => {
-    // Slight delay before resuming to avoid accidental resume during quick taps
-    setTimeout(startAutoplay, 500);
+    if (!isLocked) setTimeout(startAutoplay, 500);
   }, { passive: true });
 });
 
@@ -159,11 +156,20 @@ if (leftItems.length > 0) {
   startAutoplay();
 }
 
-// Pause autoplay while hovering or touching the project container
+// Pause autoplay while hovering or touching the project container (respect lock state)
 const projCont = document.querySelector('.projCont');
 if (projCont) {
-  projCont.addEventListener('mouseenter', stopAutoplay);
-  projCont.addEventListener('mouseleave', startAutoplay);
-  projCont.addEventListener('touchstart', stopAutoplay, { passive: true });
-  projCont.addEventListener('touchend', startAutoplay, { passive: true });
+  projCont.addEventListener('mouseenter', () => { if (!isLocked) stopAutoplay(); });
+  projCont.addEventListener('mouseleave', () => { if (!isLocked) startAutoplay(); });
+  projCont.addEventListener('touchstart', () => { if (!isLocked) stopAutoplay(); }, { passive: true });
+  projCont.addEventListener('touchend', () => { if (!isLocked) startAutoplay(); }, { passive: true });
 }
+
+// Clicking anywhere outside the left items unlocks and resumes autoplay
+document.addEventListener('click', (e) => {
+  if (!isLocked) return;
+  if (!e.target.closest('.leftItems')) {
+    isLocked = false;
+    startAutoplay();
+  }
+});
